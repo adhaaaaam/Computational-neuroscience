@@ -12,7 +12,7 @@ w1, w2, w3, w4 = [random.uniform(-0.5, 0.5) for _ in range(4)]
 w5, w6, w7, w8 = [random.uniform(-0.5, 0.5) for _ in range(4)]
 
 predictedO1, predictedO2 = 0.01, 0.99
-LearningRrate = 0.1
+LearningRrate = 0.5
 
 for _ in range(99000):
     Net_h1 = (i1 * w1) + (i2 * w3) + b1
