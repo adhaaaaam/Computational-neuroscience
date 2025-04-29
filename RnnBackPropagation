@@ -1,0 +1,86 @@
+import math
+import random
+
+def softmax(x):
+    exps = [math.exp(i) for i in x]
+    sum_exps = sum(exps)
+    return [j / sum_exps for j in exps]
+
+def cross_entropy(pred, target):
+    return -math.log(pred[target])
+
+def one_hot(word, vocab):
+    vec = [0] * len(vocab)
+    vec[vocab.index(word)] = 1
+    return vec
+
+vocab = ["delta", "university", "cyber", "security"]
+input_words = ["delta", "university", "cyber"]
+target_word = "security"
+target_idx = vocab.index(target_word)
+
+Wx = [[random.uniform(-1, 1) for _ in range(3)] for _ in range(4)]
+Wh = [[random.uniform(-1, 1) for _ in range(3)] for _ in range(3)]
+Wy = [[random.uniform(-1, 1) for _ in range(4)] for _ in range(3)]
+bh = [0] * 3
+by = [0] * 4
+alpha = 0.1
+
+for epoch in range(1000):
+    h = [0] * 3
+    hs = []
+    for t in range(3):
+        x = one_hot(input_words[t], vocab)
+        a = [sum(Wx[i][j] * x[i] for i in range(4)) + sum(Wh[i][j] * h[i] for i in range(3)) + bh[j] for j in range(3)]
+        h = [math.tanh(a_i) for a_i in a]
+        hs.append(h[:])
+    y_raw = [sum(Wy[i][j] * h[i] for i in range(3)) + by[j] for j in range(4)]
+    y_pred = softmax(y_raw)
+    loss = cross_entropy(y_pred, target_idx)
+
+    dWy = [[0 for _ in range(4)] for _ in range(3)]
+    dWh = [[0 for _ in range(3)] for _ in range(3)]
+    dWx = [[0 for _ in range(3)] for _ in range(4)]
+    dbh = [0] * 3
+    dby = [0] * 4
+
+    dy = y_pred[:]
+    dy[target_idx] -= 1
+    for i in range(3):
+        for j in range(4):
+            dWy[i][j] = hs[2][i] * dy[j]
+    for j in range(4):
+        dby[j] = dy[j]
+
+    dh = [sum(Wy[i][j] * dy[j] for j in range(4)) for i in range(3)]
+    for t in reversed(range(3)):
+        h_raw = hs[t]
+        dtanh = [dh_i * (1 - h_raw[i] ** 2) for i, dh_i in enumerate(dh)]
+        for i in range(3):
+            for j in range(3):
+                dWh[i][j] += hs[t-1][i] * dtanh[j] if t > 0 else 0
+        for i in range(4):
+            for j in range(3):
+                xi = one_hot(input_words[t], vocab)[i]
+                dWx[i][j] += xi * dtanh[j]
+        for j in range(3):
+            dbh[j] += dtanh[j]
+        dh = [sum(Wh[i][j] * dtanh[j] for j in range(3)) for i in range(3)]
+
+    for i in range(4):
+        for j in range(3):
+            Wx[i][j] -= alpha * dWx[i][j]
+    for i in range(3):
+        for j in range(3):
+            Wh[i][j] -= alpha * dWh[i][j]
+    for i in range(3):
+        for j in range(4):
+            Wy[i][j] -= alpha * dWy[i][j]
+    for j in range(3):
+        bh[j] -= alpha * dbh[j]
+    for j in range(4):
+        by[j] -= alpha * dby[j]
+
+print("Prediction:", y_pred)
+print("Predicted word:", vocab[y_pred.index(max(y_pred))])
+print("Loss:", loss)
